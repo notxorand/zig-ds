@@ -5,6 +5,7 @@
 //! It's a work in progress, with plans for:
 //!
 //! - [x] bitmap
+//! - [ ] merkle tree
 //! - [ ] merkle mountain range (mmr)
 //! - [ ] sparse merkle tree (smt)
 //! - [ ] lamport clock

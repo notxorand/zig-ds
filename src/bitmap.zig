@@ -31,8 +31,6 @@ fn BitmapImpl(size: usize) type {
 
         /// Deinitialise the bitmap.
         pub fn deinit(self: *Self) void {
-            self.bits.len = 0;
-            self.dirty_bits.len = 0;
             self.bits = undefined;
             self.dirty_bits = undefined;
         }
@@ -152,7 +150,7 @@ fn BitmapImpl(size: usize) type {
             if (self.bits.len != other.bits.len) {
                 return;
             }
-            for (self.bits, self.bits.len) |bit, i| {
+            for (self.bits, 0..self.bits.len) |bit, i| {
                 self.bits[i] = bit & other.bits[i];
             }
         }
@@ -162,7 +160,7 @@ fn BitmapImpl(size: usize) type {
             if (self.bits.len != other.bits.len) {
                 return;
             }
-            for (self.bits, self.bits.len) |bit, i| {
+            for (self.bits, 0..self.bits.len) |bit, i| {
                 self.bits[i] = bit | other.bits[i];
             }
         }
@@ -172,7 +170,7 @@ fn BitmapImpl(size: usize) type {
             if (self.bits.len != other.bits.len) {
                 return;
             }
-            for (self.bits, self.bits.len) |bit, i| {
+            for (self.bits, 0..self.bits.len) |bit, i| {
                 self.bits[i] = bit ^ other.bits[i];
             }
         }
@@ -182,7 +180,7 @@ fn BitmapImpl(size: usize) type {
             if (self.bits.len == 0) {
                 return;
             }
-            for (self.bits, self.bits.len) |bit, i| {
+            for (self.bits, 0..self.bits.len) |bit, i| {
                 self.bits[i] = ~bit;
             }
         }
@@ -192,17 +190,18 @@ fn BitmapImpl(size: usize) type {
             if (self.bits.len != other.bits.len) {
                 return;
             }
-            for (self.bits, self.bits.len) |bit, i| {
+            for (self.bits, 0..self.bits.len) |bit, i| {
                 self.bits[i] = bit & ~other.bits[i];
             }
         }
     };
 }
 
-const Bitmap = BitmapImpl;
+pub const Bitmap = BitmapImpl;
 
 test "mutate bitmap" {
     var bitmap = Bitmap(80).init();
+    defer bitmap.deinit();
     bitmap.prepare();
     bitmap.set(0);
     bitmap.set(1);
@@ -214,7 +213,6 @@ test "mutate bitmap" {
     try testing.expect(bitmap.get(2));
     try testing.expect(bitmap.get(3));
     try testing.expect(!bitmap.get(4));
-
     bitmap.prepare();
     bitmap.set(4);
     bitmap.set(5);
@@ -235,6 +233,7 @@ test "mutate bitmap" {
 
 test "read ops" {
     var bitmap = Bitmap(80).init();
+    defer bitmap.deinit();
     bitmap.prepare();
     bitmap.set(0);
     bitmap.set(1);
@@ -242,7 +241,6 @@ test "read ops" {
     bitmap.set(3);
     try testing.expect(bitmap.is_dirty());
     bitmap.commit();
-
     try testing.expect(!bitmap.is_dirty());
     try testing.expect(bitmap.len() == 80);
     try testing.expect(bitmap.len_bytes() == 10);
@@ -252,6 +250,7 @@ test "read ops" {
 
 test "set/clear range" {
     var bitmap = Bitmap(80).init();
+    defer bitmap.deinit();
     bitmap.prepare();
     bitmap.set_range(0, 10);
     bitmap.commit();
@@ -284,6 +283,7 @@ test "set/clear range" {
 
 test "set/clear all" {
     var bitmap = Bitmap(80).init();
+    defer bitmap.deinit();
     bitmap.prepare();
     bitmap.set_all();
     bitmap.commit();
@@ -301,4 +301,131 @@ test "set/clear all" {
 }
 
 // TODO: fix bitwise ops and test
-test "bitwise ops" {}
+test "bitwise ops and" {
+    var bitmap = Bitmap(8).init();
+    defer bitmap.deinit();
+    bitmap.prepare();
+    bitmap.set(0);
+    bitmap.set(1);
+    bitmap.set(2);
+    bitmap.set(3);
+    bitmap.commit();
+    var bitmap2 = Bitmap(8).init();
+    defer bitmap2.deinit();
+    bitmap2.prepare();
+    bitmap2.set(4);
+    bitmap2.set(5);
+    bitmap2.set(6);
+    bitmap2.set(7);
+    bitmap2.commit();
+    bitmap.set_and(&bitmap2);
+    try testing.expect(!bitmap.get(0));
+    try testing.expect(!bitmap.get(1));
+    try testing.expect(!bitmap.get(2));
+    try testing.expect(!bitmap.get(3));
+    try testing.expect(!bitmap.get(4));
+    try testing.expect(!bitmap.get(5));
+    try testing.expect(!bitmap.get(6));
+    try testing.expect(!bitmap.get(7));
+}
+
+test "bitwise ops or" {
+    var bitmap = Bitmap(8).init();
+    defer bitmap.deinit();
+    bitmap.prepare();
+    bitmap.set(0);
+    bitmap.set(1);
+    bitmap.set(2);
+    bitmap.set(3);
+    bitmap.commit();
+    var bitmap2 = Bitmap(8).init();
+    defer bitmap2.deinit();
+    bitmap2.prepare();
+    bitmap2.set(4);
+    bitmap2.set(5);
+    bitmap2.set(6);
+    bitmap2.set(7);
+    bitmap2.commit();
+    bitmap.set_or(&bitmap2);
+    try testing.expect(bitmap.get(0));
+    try testing.expect(bitmap.get(1));
+    try testing.expect(bitmap.get(2));
+    try testing.expect(bitmap.get(3));
+    try testing.expect(bitmap.get(4));
+    try testing.expect(bitmap.get(5));
+    try testing.expect(bitmap.get(6));
+    try testing.expect(bitmap.get(7));
+}
+
+test "bitwise ops xor" {
+    var bitmap = Bitmap(8).init();
+    defer bitmap.deinit();
+    bitmap.prepare();
+    bitmap.set(0);
+    bitmap.set(1);
+    bitmap.set(2);
+    bitmap.set(3);
+    bitmap.set(4);
+    bitmap.commit();
+    var bitmap2 = Bitmap(8).init();
+    defer bitmap2.deinit();
+    bitmap2.prepare();
+    bitmap2.set(4);
+    bitmap2.set(5);
+    bitmap2.set(6);
+    bitmap2.set(7);
+    bitmap2.commit();
+    bitmap.set_xor(&bitmap2);
+    try testing.expect(bitmap.get(0));
+    try testing.expect(bitmap.get(1));
+    try testing.expect(bitmap.get(2));
+    try testing.expect(bitmap.get(3));
+    try testing.expect(!bitmap.get(4));
+    try testing.expect(bitmap.get(5));
+    try testing.expect(bitmap.get(6));
+    try testing.expect(bitmap.get(7));
+}
+
+test "bitwise ops not" {
+    var bitmap = Bitmap(8).init();
+    defer bitmap.deinit();
+    bitmap.prepare();
+    bitmap.set(0);
+    bitmap.set(1);
+    bitmap.set(2);
+    bitmap.set(3);
+    bitmap.commit();
+    bitmap.set_not();
+    try testing.expect(!bitmap.get(0));
+    try testing.expect(!bitmap.get(1));
+    try testing.expect(!bitmap.get(2));
+    try testing.expect(!bitmap.get(3));
+}
+
+test "bitwise ops and not" {
+    var bitmap = Bitmap(8).init();
+    defer bitmap.deinit();
+    bitmap.prepare();
+    bitmap.set(0);
+    bitmap.set(1);
+    bitmap.set(2);
+    bitmap.set(3);
+    bitmap.commit();
+    var bitmap2 = Bitmap(8).init();
+    defer bitmap2.deinit();
+    bitmap2.prepare();
+    bitmap2.set(4);
+    bitmap2.set(5);
+    bitmap2.set(6);
+    bitmap2.set(7);
+    bitmap2.commit();
+    bitmap.set_and_not(&bitmap2);
+    try testing.expect(bitmap.get(0));
+    try testing.expect(bitmap.get(1));
+    try testing.expect(bitmap.get(2));
+    try testing.expect(bitmap.get(3));
+    try testing.expect(!bitmap.get(4));
+    try testing.expect(!bitmap.get(5));
+    try testing.expect(!bitmap.get(6));
+    try testing.expect(!bitmap.get(7));
+}
