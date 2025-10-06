@@ -5,6 +5,8 @@ This is a compilation of common data structures and trees in Zig. Most of these 
 It's a work in progress, with plans for:
 
 - [x] bitmap
+- [x] bloom filter
+- [ ] cuckoo filter
 - [ ] merkle tree
 - [ ] merkle mountain range (mmr)
 - [ ] sparse merkle tree (smt)
