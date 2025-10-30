@@ -1,5 +1,7 @@
 # zig data structures
 
+[![Brainmade](https://brainmade.org/black-logo.svg)](https://brainmade.org)
+
 This is a compilation of common data structures and trees in Zig. Most of these exist in the Rust ecosystem already (not standardised), so I'm mostly porting them over.
 
 It's a work in progress, with plans for:
