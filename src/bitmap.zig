@@ -38,9 +38,9 @@ fn BitmapImpl(size: usize) type {
         // -------- Write operations --------
         /// Set the bit at the given index to 1.
         pub fn set(self: *Self, index: usize) void {
-                if (index >= bit_size) {
-                    return;
-                }
+            if (index >= bit_size) {
+                return;
+            }
             self.dirty_bits[index / 8] |= @as(u8, 1) << @as(u3, @intCast(index % 8));
         }
 
